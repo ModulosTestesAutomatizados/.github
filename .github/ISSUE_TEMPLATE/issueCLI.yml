@@ -1,0 +1,38 @@
+name: 🐛 Reportar Bug na CLI
+description: Relate um problema encontrado ao utilizar a CLI Boilerplate Go.
+title: "[BUG]: "
+labels: ["bug", "triage"]
+assignees:
+  - 
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar a melhorar a nossa DX! Preencha os detalhes abaixo.
+  - type: input
+    id: command
+    attributes:
+      label: Comando Executado
+      description: Qual foi o comando exato disparado no terminal?
+      placeholder: "ex: boilerplate auth login"
+    validations:
+      required: true
+  - type: dropdown
+    id: context
+    attributes:
+      label: Ecossistema Afetado
+      description: O erro impacta a instalação de quais pacotes?
+      options:
+        - Java (Maven)
+        - Vue (npm)
+        - Setup Inicial / Autenticação
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Saída do Terminal (Logs)
+      description: Cole o erro exato que o programa retornou.
+      render: shell
+    validations:
+      required: true

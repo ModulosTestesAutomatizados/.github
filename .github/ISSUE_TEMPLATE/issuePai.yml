@@ -1,0 +1,7 @@
+name: Issue épica
+description: "Realização do Milestone"
+title: "vx.x.x - Descrição do Milestone"
+labels: ["release"]
+release: "MAJOR"
+assignees:
+  - 
