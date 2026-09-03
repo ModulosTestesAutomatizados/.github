@@ -11,6 +11,7 @@ Organização para templates, pacotes e aplicações base usados para acelerar n
 ## Campos de Project
 
 - `Priority`: Urgent, High, Medium, Low.
-- `Effort`: Low, Medium, High, Team.
+- `Effort`: Team, High, Medium, Low.
 - `Size`: XS, S, M, L, XL.
 - `Estimate`: escala numérica definida pela entrega.
+
