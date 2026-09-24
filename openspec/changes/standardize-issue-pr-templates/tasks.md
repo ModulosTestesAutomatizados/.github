@@ -23,4 +23,4 @@
 
 - [x] 4.1 Validar o YAML dos seis formulários e os campos exigidos no contrato; executar `git diff --check` e registrar resultados de validação em `specs/003-templates-issues-prs/validation-results.md`.
 - [x] 4.2 Revisar os cenários de `specs/003-templates-issues-prs/quickstart.md` em repositório de ensaio se disponível, anotando os passos não executados sem criar issues de teste no repositório principal; verificar as evidências registradas.
-- [ ] 4.3 Revisar `git diff` da branch `feature/issue-4`, publicar o commit e abrir PR de `feature/issue-4` diretamente para `master` em `ModulosTestesAutomatizados/.github`; verificar URL, base e arquivos do PR.
+- [x] 4.3 Revisar `git diff` da branch `feature/issue-4`, publicar o commit e abrir PR de `feature/issue-4` diretamente para `master` em `ModulosTestesAutomatizados/.github`; verificar URL, base e arquivos do PR.
