@@ -1,0 +1,11 @@
+.opencode/node_modules/
+node_modules/
+*.log
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

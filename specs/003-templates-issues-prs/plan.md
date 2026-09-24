@@ -1,26 +1,25 @@
 # Implementation Plan: Templates de issues e PRs
 
-**Branch**: `feature/sdd` (planejamento) | **Date**: 2026-09-23 | **Spec**: [spec.md](spec.md)
+**Branch**: `feature/issue-4` → `master` | **Date**: 2026-09-24 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/003-templates-issues-prs/spec.md`
 
 ## Summary
 
-Formulários de issue por tipo e um template de PR com conteúdo padronizado; respeitar o que
-o formulário GitHub preenche nativamente e conciliar metadados externos em automação opcional,
-com descoberta de campos, permissões e fallback manual. Migrar pilotos sem perder bug da CLI.
+Formulários por tipo e um template de PR com conteúdo padronizado; aplicar `type`, título e
+labels quando suportados, sem fixar `projects` globalmente. Instruir preenchimento manual
+dos metadados restantes e migrar pilotos sem perder o bug da CLI.
 
 ## Technical Context
 
-**Language/Version**: Markdown e YAML de issue forms/GitHub Actions; integração de metadados
-por API GitHub se necessária
+**Language/Version**: Markdown e YAML de Issue Forms do GitHub
 
-**Primary Dependencies**: GitHub Issue Forms, PR templates, Issues API e Projects API
+**Primary Dependencies**: GitHub Issue Forms e PR templates
 
 **Storage**: arquivos versionados de templates; metadados de issues/PRs/Projects no GitHub
 
-**Testing**: validação YAML e formulário na UI, criação de cinco issues e PR de exemplo,
-verificação de Project com e sem campos e comparação com templates piloto
+**Testing**: validação YAML/schema e formulário na UI, cinco tipos de issue e PR de exemplo,
+verificação de pendências manuais e comparação com templates piloto
 
 **Target Platform**: repositório organizacional `.github` e consumidores GitHub compatíveis
 
@@ -28,8 +27,8 @@ verificação de Project com e sem campos e comparação com templates piloto
 
 **Performance Goals**: preencher novo card de tipo conhecido em até 5 min
 
-**Constraints**: forms não criam automaticamente parent/milestone/Project Fields; nunca
-fixar ID de campo entre organizações; não presumir labels/assignees existentes
+**Constraints**: forms suportam `type` e `projects` (este último exige permissão), mas não
+criam parent/milestone/Issue Fields/valores de Project; não presumir Project/assignees globais
 
 **Scale/Scope**: cinco categorias de issue e um PR; migração de dois templates piloto
 
@@ -40,11 +39,11 @@ fixar ID de campo entre organizações; não presumir labels/assignees existente
 - I/III: formatos reutilizáveis, distinguíveis e com apenas campos úteis; piloto específico
   da CLI fica identificado como exceção existente, sem forçar consumidores.
 - II: formato, limitação e migração documentados, sem alteração silenciosa.
-- IV: conciliação usa permissão mínima e não executa código vindo de formulário.
+- IV: nenhum workflow com escrita nem credencial adicional nesta entrega.
 - V: exemplo de consumo, cenários de UI e ausência de Projects no quickstart.
 
-**Rechecagem pós-design**: separação entre forms e automação de metadados explícita no
-contrato; preservação de `issueCLI.yml` e migração de `issuePai.yml` previstas. Gates satisfeitos.
+**Rechecagem pós-design**: separação entre metadados nativos e edição posterior explícita;
+preservação de `issueCLI.yml` e migração de `issuePai.yml` previstas. Gates satisfeitos.
 
 ## Project Structure
 
@@ -72,14 +71,12 @@ specs/003-templates-issues-prs/
 .github/ISSUE_TEMPLATE/task.yml        # proposto
 .github/ISSUE_TEMPLATE/hotfix.yml      # proposto
 .github/PULL_REQUEST_TEMPLATE.md       # proposto
-.github/workflows/issue-metadata.yml   # proposto; opcional e com guardas
-scripts/templates/                     # proposto; conciliação por IDs resolvidos
 docs/templates.md                      # proposto; consumo e limitações
-tests/templates/                       # proposto; validação e cenários
 ```
 
 **Structure Decision**: reusar `issuePai.yml` para épica corrigindo-o, não criar formulário
-duplicado; manter `issueCLI.yml` como especialização de bug da CLI.
+duplicado; manter `issueCLI.yml` como bug da CLI. Automação de Issue Fields fica fora desta
+entrega porque workflows não são herdados e exigiriam contrato, permissão e adoção próprios.
 
 ## Complexity Tracking
 

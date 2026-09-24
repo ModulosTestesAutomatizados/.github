@@ -1,107 +1,68 @@
 ---
-description: "Tarefas para templates de issues e pull requests"
+description: "Tarefas de implementação dos templates de issues e PRs"
 ---
 
 # Tasks: Templates de issues e PRs
 
-**Input**: `specs/003-templates-issues-prs/` (spec, plan, research, data-model, contrato e quickstart)
+**Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [contrato](contracts/templates.md) e [quickstart.md](quickstart.md).
 
-**Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/templates.md`
-
-**Tests**: Verificação de formulários e uso manual descrita em `quickstart.md`.
-
-**Organization**: Histórias independentes: issues, PR e conciliação.
+**Tests**: Validação estrutural dos seis formulários e revisão de conteúdo/experiência conforme [quickstart.md](quickstart.md).
 
 ## Format: `[ID] [P?] [Story] Description`
 
-- **[P]**: pode ser feita em paralelo em arquivo distinto sem dependência pendente.
-- **[Story]**: rótulo da história correspondente em `spec.md`.
-
-## Path Conventions
-
-- Forms em `.github/ISSUE_TEMPLATE/`, PR em `.github/PULL_REQUEST_TEMPLATE.md`, automação
-  em `.github/workflows/` e `scripts/templates/`; documentação em `docs/templates.md`.
+- **[P]**: tarefa executável em paralelo em arquivo distinto.
+- **[Story]**: corresponde às jornadas da especificação.
 
 ## Phase 1: Setup
 
-**Purpose**: Mapear a compatibilidade dos dois pilotos antes de alterá-los.
+**Purpose**: preservar a funcionalidade dos pilotos antes da migração.
 
-- [ ] T001 Registrar em `tests/templates/pilots.md` campos de `.github/ISSUE_TEMPLATE/issueCLI.yml` (comando, ecossistema, logs) e `.github/ISSUE_TEMPLATE/issuePai.yml` (título/label) que deverão continuar disponíveis.
-- [ ] T002 [P] Criar verificação de sintaxe e campos suportados de issue forms em `tests/templates/validate-forms.sh`.
+- [X] T001 Registrar em `specs/003-templates-issues-prs/quickstart.md` que o piloto `.github/ISSUE_TEMPLATE/issueCLI.yml` exige comando, ecossistema e logs, e que `issuePai.yml` é o único formulário de épica; conferir no diff da migração.
 
 ## Phase 2: Foundational
 
-**Purpose**: Evitar defaults incompatíveis para tipos distintos.
+**Purpose**: manter uma escala consistente para todas as jornadas.
 
-- [ ] T003 Definir em `docs/templates.md` matriz de valor Size XS/S/M/L/XL, Estimate 0 homologação, 1–5 feature, 6 hotfix, 7/8/9 release PATCH/MINOR/MAJOR e 10 exclusivo épica.
-- [ ] T004 [P] Definir em `tests/templates/scenarios.md` exemplos de título, corpo, parent/milestone e metadados esperados para cinco tipos, incluindo caso sem Project.
+- [X] T002 Escrever `docs/templates.md` com a escala Size XS–XL, Estimate 0 homologação, 1–5 feature, 6 hotfix, 7/8/9 PATCH/MINOR/MAJOR e 10 somente épica; conferir os exemplos com issue #4.
 
-## Phase 3: User Story 1 - Registrar entrega com contexto mínimo (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Registrar entrega (P1)
 
-**Goal**: Cinco escolhas claras de issue, preservando bug da CLI.
+**Goal**: cinco escolhas de issue, mantendo o bug da CLI.
 
-**Independent Test**: formulário vazio exige contexto; épica e hotfix não trocam defaults.
+**Independent Test**: conferir seleção, obrigatoriedade dos campos, título, tipo, escala e nenhuma duplicação de épica.
 
-- [ ] T005 [US1] Migrar `.github/ISSUE_TEMPLATE/issuePai.yml` para formulário válido de épica, mantendo a única opção de épica e orientando milestone com título igual, Release MAJOR, Size XL, Estimate 10, Effort Team e datas equivalentes.
-- [ ] T006 [P] [US1] Criar `.github/ISSUE_TEMPLATE/release.yml` para release não épica com opção PATCH/MINOR/MAJOR, Estimate 7/8/9, contexto, entrega e premissas obrigatórios.
-- [ ] T007 [P] [US1] Criar `.github/ISSUE_TEMPLATE/feature.yml` com título `[FEATURE]`, vínculo de épica/milestone, contexto/entrega/premissas obrigatórios e Scale Size XS–XL/Estimate 1–5 por valor agregado.
-- [ ] T008 [P] [US1] Criar `.github/ISSUE_TEMPLATE/task.yml` com título `[TASK]`, contexto/entrega/premissas obrigatórios e orientação de valor sem Estimate fixo.
-- [ ] T009 [P] [US1] Criar `.github/ISSUE_TEMPLATE/hotfix.yml` com título `[HOTFIX]`, motivo emergencial, impacto, validação, contexto/premissas obrigatórios e Estimate 6 com Size variável.
-- [ ] T010 [US1] Corrigir somente incompatibilidades comprovadas no piloto `.github/ISSUE_TEMPLATE/issueCLI.yml`, preservando comando, ecossistema e logs obrigatórios conforme T001.
+- [X] T003 [US1] Corrigir `.github/ISSUE_TEMPLATE/issuePai.yml` como única épica com `body`, `type: Release`, título `vX.Y.Z` e orientações de milestone/datas/Estimate 10/Size XL/Effort Team/Release MAJOR; validar a sintaxe e que não há chave `release` personalizada.
+- [X] T004 [P] [US1] Criar `.github/ISSUE_TEMPLATE/release.yml` com `type: Release`, escolha PATCH/MINOR/MAJOR, Estimate 7/8/9, contexto/entrega/premissas e aviso de que não é épica; validar as opções.
+- [X] T005 [P] [US1] Criar `.github/ISSUE_TEMPLATE/feature.yml` com `type: Feature`, prefixo `[LABEL]` editável, referência à épica, contexto/entrega/premissas e escala XS–XL/Estimate 1–5; conferir os campos obrigatórios.
+- [X] T006 [P] [US1] Criar `.github/ISSUE_TEMPLATE/task.yml` com `type: Task`, prefixo `[LABEL]` editável, referência à épica, contexto/entrega/premissas e seleção de valor sem Estimate fixo; conferir os campos obrigatórios.
+- [X] T007 [P] [US1] Criar `.github/ISSUE_TEMPLATE/hotfix.yml` com `type: Hotfix`, prefixo `[LABEL]` editável, impacto/urgência/validação, contexto/premissas, Estimate 6 e Size variável; conferir os campos obrigatórios.
+- [X] T008 [US1] Preservar `.github/ISSUE_TEMPLATE/issueCLI.yml` com comando, ecossistema e logs obrigatórios, corrigindo apenas incompatibilidades comprovadas; comparar com o piloto no `git diff`.
 
-**Checkpoint**: cinco tipos + bug da CLI sem duplicar formulário de épica.
+## Phase 4: User Story 2 - Revisar PR (P2)
 
-## Phase 4: User Story 2 - Revisar PR com evidências padronizadas (Priority: P2)
+**Goal**: PR com evidências e vínculo coerente à issue.
 
-**Goal**: PR traz evidência de entrega e revisão.
+**Independent Test**: visualizar PR e localizar as quatro seções, relação, metadados e revisão.
 
-**Independent Test**: abrir PR de exemplo e encontrar issue, quatro seções e checklist.
+- [X] T009 [US2] Criar `.github/PULL_REQUEST_TEMPLATE.md` com issue relacionada, `Realização`, `Fontes modificados`, `p/ teste`, `O que há de novo` e checklist de review/metadados; conferir se as quatro seções aparecem no Markdown.
+- [X] T010 [US2] Orientar no mesmo `.github/PULL_REQUEST_TEMPLATE.md` referência simples em PRs intermediários e fechamento somente quando merge na branch padrão encerrar a issue; conferir exemplo para base `master`.
 
-- [ ] T011 [US2] Criar `.github/PULL_REQUEST_TEMPLATE.md` com vínculo à issue, `Realização`, `Fontes modificados`, `p/ teste`, `O que há de novo` e checklist de review/labels/milestone/Project.
-- [ ] T012 [US2] Incluir em `.github/PULL_REQUEST_TEMPLATE.md` instrução de referência sem fechamento para `release/*`/`develop` e fechamento apenas para principal, além de conferência de metadados com a issue.
+## Phase 5: User Story 3 - Metadados e adoção (P3)
 
-**Checkpoint**: revisor consegue conferir o PR sem a automação de Project.
+**Goal**: usar apenas metadados nativos globais seguros e instruir complementação.
 
-## Phase 5: User Story 3 - Completar metadados com segurança (Priority: P3)
+**Independent Test**: validar tipos organizacionais, ausência de `projects` fixado e documentos para preenchimento restante.
 
-**Goal**: Conciliar quando autorizado e sinalizar o restante.
-
-**Independent Test**: com Project aplica apenas valores corretos; sem Project lista pendências.
-
-- [ ] T013 [US3] Implementar em `scripts/templates/resolve-fields.sh` consulta ao repositório/Project alvo para IDs reais de campos, opções, tipo, milestone e vínculo, rejeitando IDs de outra organização.
-- [ ] T014 [US3] Implementar em `scripts/templates/reconcile.sh` aplicação apenas de valores válidos, com Estimate 10/Size XL/Release MAJOR/Effort Team exclusivos de épica, e retorno explícito de pendências.
-- [ ] T015 [US3] Criar `.github/workflows/issue-metadata.yml` com `workflow_call` para uso opt-in por consumidores, separando token de Project, recusando vínculo incerto e jamais executando texto de issue como código.
-- [ ] T016 [US3] Adicionar a `tests/templates/scenarios.md` casos com/sem permissão/Project/field e PR vinculado para comprovar ausência de atualização em item errado.
-
-**Checkpoint**: conciliação não impede criação básica por formulário.
+- [X] T011 [US3] Documentar em `docs/templates.md` campos nativos `title`, `labels`, `type`, `projects` (este último com permissão e somente para consumidor específico), distinguindo Issue Fields dos campos Projects; conferir que os formulários não contêm Project #6 nem assignee global.
+- [X] T012 [US3] Documentar em `docs/templates.md` herança na organização pública `.github`, precedência da pasta local de Issue Forms, substituição do PR template local e ausência de herança de workflows; conferir exemplos de consumidor com e sem templates locais.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-**Purpose**: Instruções de adoção e validação em consumidor real.
-
-- [ ] T017 Documentar em `docs/templates.md` adoção por defaults da organização versus arquivos locais, metadados manuais, migração do piloto e instruções de referência fixa para a automação opt-in.
-- [ ] T018 Executar `specs/003-templates-issues-prs/quickstart.md` e registrar evidências de cinco issues, bug da CLI, PR e fallback em `tests/templates/validation-results.md`.
+- [X] T013 Revisar todos os formulários YAML em `.github/ISSUE_TEMPLATE/` contra o contrato em `specs/003-templates-issues-prs/contracts/templates.md` e executar `git diff --check`; conferir que labels inexistentes não bloqueiam e nenhum campo externo é prometido como automático.
+- [X] T014 Executar o roteiro em `specs/003-templates-issues-prs/quickstart.md` onde houver permissão de ensaio e registrar em `specs/003-templates-issues-prs/validation-results.md` resultados e passos de UI não executados; não criar issues de teste no repositório principal.
 
 ## Dependencies & Execution Order
 
-- T001–T004 precedem a migração; T005 precede T010 para comparar piloto e épica nova.
-- US2 pode ser implementada após T001–T004 em paralelo a US1; US3 requer matriz T003,
-  não depende da existência do template de PR para aplicar metadados da issue.
-- T015 requer T013–T014; T017–T018 seguem as histórias escolhidas para validação.
-
-## Parallel Example: User Story 1
-
-- Após T001–T004, T006–T009 podem ser feitos em paralelo: arquivos separados e sem
-  dependência entre formulários. T005 e T010 seguem a comparação com o piloto.
-- Em US2, documentação preliminar T017 pode começar após T011, mas T012 altera o mesmo
-  arquivo e deve ser sequencial.
-
-## Implementation Strategy
-
-- MVP: T001–T010; experimentar os cinco tipos e manter o bug da CLI.
-- Incrementos: T011–T012 para PR, T013–T016 para campos externos, T017–T018 para adoção.
-
-## Notes
-
-- Um form não cria parent/milestone/Issue Fields/Project Fields por si só; indicar pendência
-  ou aplicar etapa de API com permissão, sem inserir chaves não suportadas no YAML.
+- T001–T002 precedem T003–T012; T003 precede T008; T004–T007 são independentes entre si.
+- US2 pode começar após T002 em paralelo com US1; T011–T012 precedem a validação final.
+- MVP: T001–T008; entrega completa: T001–T014.

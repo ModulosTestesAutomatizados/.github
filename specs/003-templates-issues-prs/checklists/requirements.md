@@ -27,5 +27,6 @@
 
 ## Notes
 
-- Premissa crítica: não atribuir Issue Fields/Project Fields por chaves de YAML sem suporte;
-  documentar limitações e tratar automação de metadados como etapa própria.
+- Premissa crítica: `type`/`projects` são chaves válidas em Issue Forms, mas não alteram
+  valores de Issue Fields/Project Fields. Valores externos requerem preenchimento manual
+  nesta entrega; eventual automação terá contrato próprio e opt-in.
