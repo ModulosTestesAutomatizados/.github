@@ -3,6 +3,7 @@ node_modules/
 *.log
 .env.local
 .env.*.local
+.envrc
 .DS_Store
 Thumbs.db
 *.tmp
