@@ -31,12 +31,27 @@ try {
   if (command === 'event') {
     const event = JSON.parse(readFileSync(args[0], 'utf8'));
     const pr = event.pull_request;
-    if (!pr || !Number.isInteger(pr.number) || !pr.base?.ref || !pr.head?.sha) {
+    const [, releaseBranch, targetBranch] = args;
+    if (!pr || !Number.isInteger(pr.number) || !pr.base?.ref || !pr.head?.ref || !pr.head?.sha) {
       throw Error('Evento pull_request inválido');
     }
-    const issue = /(?:^|\s)(?:Refs|Fixes|Closes|Resolves)\s+#([1-9]\d*)\b/im.exec(pr.body ?? '');
-    if (!issue) throw Error('O PR deve referenciar uma issue com Refs #N');
-    process.stdout.write(`${pr.number}|${pr.base.ref}|${pr.head.sha}|${issue[1]}\n`);
+    const base = pr.base.ref, head = pr.head.ref, body = pr.body ?? '';
+    let phase;
+    if (head.startsWith('feature/') && base === releaseBranch) phase = 'feature-to-release';
+    else if (head === releaseBranch && base === 'develop') phase = 'release-to-develop';
+    else if (head === 'develop' && base === targetBranch) phase = 'develop-to-main';
+    else if (head.startsWith('versioning/') && base === targetBranch) phase = 'version-pr';
+    else throw Error(`Transição de PR não suportada: ${head} → ${base}`);
+    const issueMatch = /(?:^|\s)(?:Refs|Fixes|Closes|Resolves)\s+#([1-9]\d*)\b/im.exec(body);
+    const epicMatch = /(?:^|\s)(?:Epic|Épica):?\s+#([1-9]\d*)\b/im.exec(body);
+    const reference = phase === 'feature-to-release' ? issueMatch : epicMatch ?? issueMatch;
+    if (!reference) {
+      throw Error(phase === 'feature-to-release'
+        ? 'PR de feature deve referenciar sub-issue com Refs #N'
+        : 'PR de integração/versionamento deve referenciar a épica com Epic: #N ou Refs #N');
+    }
+    process.stdout.write(JSON.stringify({ number: pr.number, base, head,
+      headSha: pr.head.sha, phase, issue: reference?.[1] ?? null }) + '\n');
   } else if (command === 'analyze') {
     const [base, head, current] = args;
     const log = execFileSync('git', ['log', '--no-merges', '--format=%B%x00', `${base}..${head}`],

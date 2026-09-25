@@ -2,15 +2,18 @@
 
 ## Decisão: momento de publicar
 
-- **Decision**: PR faz apenas prévia; publicação acontece após merge na branch principal do
-  consumidor, com evidência de aprovação/homologação nas regras do consumidor.
-- **Rationale**: PR simultâneo não é commit final; prévia não pode criar tag definitiva.
-- **Alternatives considered**: criar tags por PR foi descartado por gerar versões prematuras.
+- **Decision**: PR recebe check de vínculo/homologação conforme fase, sem prévia SemVer
+  obrigatória. Changelog provisório é somente guia opcional. A versão definitiva só é
+  produzida após o merge homologado na principal.
+- **Rationale**: O nome da milestone não é a versão da aplicação; cálculo antecipado
+  pode mudar e bloquear indevidamente o PR final.
+- **Alternatives considered**: exigir prévia SemVer ou versão nos arquivos da release
+  antes do merge contraria a decisão do responsável.
 
 ## Decisão: interoperabilidade
 
-- **Decision**: contratos de `workflow_call` separados para prévia e publicação; perfil de
-  ferramenta em enumeração fechada, com comandos explícitos por adaptador e exemplos por perfil.
+- **Decision**: contratos de `workflow_call` separados para check de PR e publicação;
+  perfil de ferramenta em enumeração fechada, com comandos explícitos por adaptador.
 - **Rationale**: o repositório centraliza a lógica de coordenação, enquanto projetos preservam
   ferramentas de versionamento próprias. Não executar comandos arbitrários vindos do título/PR.
 - **Alternatives considered**: impor `standard-version` a todos quebraria Maven/Go/Changesets.
@@ -27,7 +30,19 @@
 
 ## Decisão: changelog e proteção
 
-- **Decision**: changelog é consumido quando a ferramenta do consumidor o produz; permissões
-  de escrita são restritas ao fluxo pós-merge, e gates humanos residem na branch protection.
+- **Decision**: changelog pré-merge é opcional; `changelog_path` lê o arquivo existente
+  no SHA publicável. Alterações de versão Node são geradas pós-merge em PR sujeito a
+  checks/revisão; ferramentas derivadas de Git não recebem commit artificial.
+  Escrita é restrita ao fluxo pós-merge; gates humanos residem na proteção do consumidor.
 - **Rationale**: nem todos os perfis geram o mesmo arquivo, e um workflow não substitui review.
 - **Alternatives considered**: sintetizar changelog genérico para todos perderia semântica.
+
+## Decisão: autenticação e validação hospedada
+
+- **Decision**: `prepare-release.sh` executa em processo filho de `publish.sh`; seu
+  `unset GH_TOKEN GITHUB_TOKEN` não remove token do pai. Ensaiar criação remota real
+  antes de diagnosticar falhas de credencial. Para PR de versão, usar identidade de
+  automação que dispare checks/revisões sem contornar a proteção.
+- **Rationale**: mock local não cobre permissões, environments e gatilhos GitHub.
+- **Alternatives considered**: tratar a linha comentada como correção bloqueante não
+  reproduz o comportamento do subprocesso.

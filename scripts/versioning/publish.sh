@@ -3,7 +3,12 @@ set -euo pipefail
 script_dir=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$script_dir/resolve-adapter.sh"
 source "$script_dir/validate-sprint.sh"
+source "$script_dir/release-gates.sh"
 
+validate_release_gates
+if [[ "$PUBLISH_PHASE" == functional && ( "$ADAPTER" == standard-version || "$ADAPTER" == changesets ) ]]; then
+  exec bash "$script_dir/prepare-version-pr.sh"
+fi
 version=$(bash "$script_dir/prepare-release.sh")
 validate_release_branch "$RELEASE_BRANCH"
 select_adapter "$ADAPTER" "${PROJECT_PATH:-.}"
@@ -24,11 +29,13 @@ if [[ -n "${CHANGELOG_PATH:-}" ]]; then
   [[ "$CHANGELOG_PATH" != /* && "$CHANGELOG_PATH" != *'..'* ]] || {
     echo 'changelog_path inválido' >&2; exit 1;
   }
-  changelog=$(realpath "$root/$CHANGELOG_PATH")
-  [[ "$changelog" == "$root/"* && -f "$changelog" ]] || {
-    echo 'Changelog fora do repositório ou inexistente' >&2; exit 1;
-  }
-  body=$(<"$changelog")
+  changelog=$(realpath -m "$root/$CHANGELOG_PATH")
+  [[ "$changelog" == "$root/"* ]] || { echo 'Changelog fora do repositório' >&2; exit 1; }
+  if [[ -f "$changelog" ]]; then
+    body=$(<"$changelog")
+  else
+    echo "Changelog $CHANGELOG_PATH ausente no commit publicável; usando resumo da sprint" >&2
+  fi
 fi
 
 report() {
@@ -72,6 +79,13 @@ if ref_sha=$(current_ref_sha); then
     exit 1
   fi
 else
+  ref_status=$?
+  [[ "$ref_status" == 1 ]] || { echo 'Tag remota existe mas não aponta para commit válido' >&2; exit 1; }
+  if gh api "repos/$repo/releases/tags/$tag" >/dev/null 2>&1; then
+    report conflict
+    echo "Release $tag existe sem referência de tag verificável; intervenção necessária" >&2
+    exit 1
+  fi
   # POST git/refs é create-only: uma execução concorrente não consegue sobrescrever.
   if ! gh api -X POST "repos/$repo/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha" >/dev/null; then
     ref_sha=''
@@ -89,6 +103,8 @@ else
 fi
 
 if release=$(gh api "repos/$repo/releases/tags/$tag" 2>/dev/null); then
+  node -e 'const r=JSON.parse(process.argv[1]);if(r.tag_name!==process.argv[2]||(/^[0-9a-f]{40}$/.test(r.target_commitish??"")&&r.target_commitish!==process.argv[3]))process.exit(1)' \
+    "$release" "$tag" "$sha" || { report conflict; echo 'Release existente diverge de tag/SHA' >&2; exit 1; }
   url=$(node -p 'JSON.parse(process.argv[1]).html_url' "$release")
   report already-published "$url"
   printf 'Release já publicada: %s\n' "$url"
@@ -103,6 +119,8 @@ if ! release=$(gh api -X POST "repos/$repo/releases" -f "tag_name=$tag" -f "targ
     sleep 1
   done
   if [[ -n "$release" ]]; then
+    node -e 'const r=JSON.parse(process.argv[1]);if(r.tag_name!==process.argv[2]||(/^[0-9a-f]{40}$/.test(r.target_commitish??"")&&r.target_commitish!==process.argv[3]))process.exit(1)' \
+      "$release" "$tag" "$sha" || { report conflict; echo 'Release concorrente diverge de tag/SHA' >&2; exit 1; }
     url=$(node -p 'JSON.parse(process.argv[1]).html_url' "$release")
     report already-published "$url"
     printf 'Release já publicada por execução concorrente: %s\n' "$url"

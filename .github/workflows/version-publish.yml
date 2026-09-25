@@ -24,6 +24,10 @@ on:
         required: false
         default: ''
         type: string
+    secrets:
+      versioning_token:
+        description: Token de automação capaz de disparar checks/review do PR de versionamento Node
+        required: false
     outputs:
       version:
         value: ${{ jobs.publish.outputs.version }}
@@ -33,6 +37,8 @@ on:
         value: ${{ jobs.publish.outputs.release_url }}
       outcome:
         value: ${{ jobs.publish.outputs.outcome }}
+      version_pr_url:
+        value: ${{ jobs.publish.outputs.version_pr_url }}
 
 jobs:
   publish:
@@ -51,6 +57,7 @@ jobs:
       tag: ${{ steps.publish.outputs.tag }}
       release_url: ${{ steps.publish.outputs.release_url }}
       outcome: ${{ steps.publish.outputs.outcome }}
+      version_pr_url: ${{ steps.publish.outputs.version_pr_url }}
     steps:
       - name: Checkout do commit integrado no consumidor
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -99,4 +106,5 @@ jobs:
           PROJECT_PATH: ${{ inputs.project_path }}
           TARGET_BRANCH: ${{ inputs.target_branch }}
           CHANGELOG_PATH: ${{ inputs.changelog_path }}
+          VERSIONING_TOKEN: ${{ secrets.versioning_token }}
         run: bash .shared-versioning/scripts/versioning/publish.sh

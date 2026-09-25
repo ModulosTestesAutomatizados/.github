@@ -1,17 +1,27 @@
 # Guia de validação: Versionamento por sprint
 
-Pré-requisitos: repositório de ensaio com `develop`, `release/v1.0.0` e branch principal
-protegida; ferramentas instaladas no respectivo perfil; credenciais de publicação restritas.
+Pré-requisitos: LocalLabs com `develop`, quatro rodadas `release/vX.Y.Z` distintas,
+milestone/épica/sub-issues por rodada, branch principal protegida, ambiente de homologação
+com aprovação, identidade de automação que dispare checks, ferramentas instaladas
+e SHA/tag revisada **existente** do compartilhado. Não ativar publicação antes do
+check de PR estar corrigido e de as prévias serem ensaiadas.
 Ver [contrato](contracts/versioning.md) e [modelo](data-model.md).
 
-1. Em cada perfil (`standard-version`, Changesets, `jgitver`, `go-gitsemver`), configurar um
-   caller de prévia conforme o contrato e abrir PR de `feature/...` para `release/v1.0.0`.
-   **Esperado**: saída com `bump`/candidato e nenhuma tag/release criada.
-2. Criar PR empilhado e PR sem metadados válidos. **Esperado**: apenas prévia ou erro claro,
-   jamais publicação.
-3. Após review e homologação, integrar via PR para branch principal e executar caller de
-   publicação. **Esperado**: tag/release no commit integrado, changelog quando aplicável.
-4. Reexecutar a publicação dez vezes; simular dois PRs publicados simultaneamente.
-   **Esperado**: uma única publicação por versão/commit, nenhuma tag movida.
-5. Preparar tag igual em commit distinto e repetir. **Esperado**: conflito explícito,
-   tag/release existentes preservados e indicação de reconciliação manual.
+1. Mover a fixture de caller para `.github/workflows/` no LocalLabs com revisão fixa;
+   executar CI própria (TypeScript e Spring Boot) e configurar o check de PR como
+   obrigatório. Abrir feature → release, release → develop e develop → principal,
+   primeiro com metadados válidos, depois inválidos. **Esperado**: três checks válidos
+   passam sem SemVer obrigatório, transições inválidas falham; nenhuma tag criada.
+2. Para release → develop, observar changelog guia se houver; indisponibilidade não
+   pode bloquear o PR. Homologar em ambiente protegido e aprovar o PR final.
+3. Uma rodada por `standard-version`, `changesets`, `jgitver`, `go-gitsemver`: usar
+   versões/commits diferentes para que tags `vX.Y.Z` não colidam. Em Node, observar
+   PR de versão criado após merge funcional, seus checks/review e merge, então tag no
+   SHA versionado; em Java/Go, confirmar tag no SHA integrado quando derivado do Git.
+4. Para `standard-version`, incluir vários PRs na mesma release sem tag intermediária:
+   **esperado** um só incremento sobre as alterações acumuladas.
+5. Reexecutar publicação dez vezes, testar duas tentativas concorrentes, tag igual
+   apontando a outro commit e falha após criação da tag. **Esperado**: resultados
+   idempotentes, nenhuma tag movida, retomada somente do estado íntegro.
+6. Registrar URLs de checks, PRs de versão, tags/releases, SHAs e diagnósticos para
+   cada rodada em `LocalLabs/tests/versioning/validation-results.md`.

@@ -1,4 +1,4 @@
-name: Prévia de versionamento por sprint
+name: Validação de entregas e homologação
 
 on:
   workflow_call:
@@ -11,20 +11,21 @@ on:
         description: Branch da sprint no formato release/vMAJOR.MINOR.PATCH
         required: true
         type: string
+      target_branch:
+        description: Branch principal protegida do consumidor (main ou master)
+        required: true
+        type: string
       project_path:
         description: Diretório relativo do projeto/package no consumidor
         required: false
         default: .
         type: string
     outputs:
-      bump:
-        description: major, minor, patch ou none
-        value: ${{ jobs.preview.outputs.bump }}
-      candidate_version:
-        description: Versão candidata sem tag publicada
-        value: ${{ jobs.preview.outputs.candidate_version }}
+      phase:
+        description: Fase validada do PR
+        value: ${{ jobs.preview.outputs.phase }}
       summary:
-        description: Resumo da análise de commits
+        description: Resumo dos vínculos e gates de homologação
         value: ${{ jobs.preview.outputs.summary }}
 
 jobs:
@@ -35,8 +36,7 @@ jobs:
       pull-requests: read
       issues: read
     outputs:
-      bump: ${{ steps.preview.outputs.bump }}
-      candidate_version: ${{ steps.preview.outputs.candidate_version }}
+      phase: ${{ steps.preview.outputs.phase }}
       summary: ${{ steps.preview.outputs.summary }}
     steps:
       - name: Checkout do repositório consumidor
@@ -52,37 +52,18 @@ jobs:
           ref: ${{ job.workflow_sha }}
           path: .shared-versioning
           persist-credentials: false
-      - name: Preparar Node para projetos npm e Changesets
-        if: inputs.adapter == 'standard-version' || inputs.adapter == 'changesets'
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: '22'
-      - name: Instalar ferramentas Node do consumidor sem scripts de instalação
-        if: inputs.adapter == 'standard-version' || inputs.adapter == 'changesets'
-        env:
-          PROJECT_PATH: ${{ inputs.project_path }}
-        run: bash .shared-versioning/scripts/versioning/install-node.sh
-      - name: Preparar Java para jgitver
-        if: inputs.adapter == 'jgitver'
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Preparar Go para go-gitsemver
-        if: inputs.adapter == 'go-gitsemver'
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
-        with:
-          go-version: '1.27.0'
-      - name: Instalar go-gitsemver em revisão fixa
-        if: inputs.adapter == 'go-gitsemver'
-        run: |
-          go install github.com/MyCarrier-DevOps/go-gitsemver@680c1c12d9a4f573a8da1b2e3ccebb3571b1cab6
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-      - name: Calcular prévia somente leitura
+      - name: Validar vínculos e gates do PR (somente leitura)
         id: preview
         env:
           GH_TOKEN: ${{ github.token }}
           ADAPTER: ${{ inputs.adapter }}
           RELEASE_BRANCH: ${{ inputs.release_branch }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
           PROJECT_PATH: ${{ inputs.project_path }}
         run: bash .shared-versioning/scripts/versioning/preview.sh
+      - name: Gerar guia provisório de homologação (opcional)
+        if: steps.preview.outputs.phase == 'release-to-develop'
+        continue-on-error: true
+        env:
+          PR_PHASE: ${{ steps.preview.outputs.phase }}
+        run: bash .shared-versioning/scripts/versioning/homologation-guide.sh

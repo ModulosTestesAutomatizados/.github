@@ -1,15 +1,17 @@
 # Implementation Plan: Versionamento por sprint
 
-**Branch**: `feature/issue-2` (planejamento) | **Date**: 2026-09-23 | **Spec**: [spec.md](spec.md)
+**Branch**: `feature/issue-2` | **Date**: 2026-09-24 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/001-versionamento-por-sprint/spec.md`
 
 ## Summary
 
-Planejar dois contratos reutilizáveis: prévia de versão somente leitura em PR e publicação
-após integração aprovada na branch principal. Adaptadores declarativos por família de
-versionamento mantêm os comandos específicos fora da lógica de coordenação; publicação é
-serializada, idempotente e preserva tags existentes.
+Corrigir o check de PR para diferenciar feature, entrada da release em develop e
+integração homologada na principal; resumo/changelog provisório não bloqueia PR.
+Depois do merge funcional, adaptadores Node preparam alterações de versão em PR
+revisável e só publicam no commit versionado; Go/Java derivados de Git publicam
+no SHA integrado. A publicação continua serializada e conserva tags existentes.
+Decisões técnicas e riscos completos: [OpenSpec design](../../openspec/changes/corrigir-versionamento-pos-merge/design.md).
 
 ## Technical Context
 
@@ -18,20 +20,19 @@ serializada, idempotente e preserva tags existentes.
 **Primary Dependencies**: GitHub Actions, GitHub Releases, Git, adaptadores `standard-version`,
 Changesets/Turbo, `jgitver` e `go-gitsemver` conforme perfil do consumidor
 
-**Storage**: Git tags/releases e arquivos de versão/changelog no repositório consumidor
+**Storage**: Git tags/releases, PR de versionamento pós-merge e arquivos de versão/changelog do consumidor
 
-**Testing**: validação de YAML/contratos, execução em repositórios de exemplo para quatro perfis,
-simulação de concorrência e reexecução. O repositório de testes fornecido é o
+**Testing**: validação de YAML/contratos e dos três PRs, ensaio hospedado dos quatro perfis,
+simulação de concorrência/reexecução e build/testes próprios do consumidor. O laboratório é o
 [LocalLabs](https://github.com/GersonTekSystem/LocalLabs).
 
 **Target Platform**: GitHub Actions de repositórios autorizados a chamar workflows reutilizáveis
 
 **Project Type**: automação compartilhada para repositórios GitHub
 
-**Performance Goals**: prévia em até 2 min em projeto de exemplo; publicação em até 5 min
+**Performance Goals**: check de PR em tempo compatível com revisão; publicação observa aprovação de PR de versão quando aplicável
 
-**Constraints**: nenhum push a partir de PR; aprovação humana e proteção configuradas no
-consumidor; tags imutáveis; secrets e permissões mínimos; callers fixam referência estável
+**Constraints**: nenhum push na principal a partir de PR de feature; PR de versionamento somente após merge funcional; aprovação humana e proteção no consumidor; tags imutáveis; permissões mínimas; callers fixam revisão já existente
 
 **Scale/Scope**: quatro perfis de consumidor; release por repositório e branch de destino
 
@@ -40,14 +41,14 @@ consumidor; tags imutáveis; secrets e permissões mínimos; callers fixam refer
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - I: coordenação e contratos comuns ficam aqui; exemplos de CI do consumidor são curtos.
-- II: prévia e publicação possuem entradas/saídas e versões de referência documentadas;
+- II: check de PR, preparação e publicação possuem entradas/saídas e revisões fixas documentadas;
   nenhum breaking change silencioso.
-- IV: PR é somente leitura; escrita em release exige token mínimo pós-merge; nada de secrets
+- IV: check de PR é somente leitura; PR de versão e release exigem token mínimo pós-merge; nada de secrets
   em código não confiável.
 - V: quatro exemplos e cenários de falha/concorrência previstos para validação.
 
-**Rechecagem pós-design**: contratos em `contracts/`, instruções em `quickstart.md` e
-impossibilidade de mover tags mantêm os quatro gates satisfeitos; sem exceções.
+**Rechecagem pós-design**: contrato em `contracts/`, cenário em `quickstart.md`,
+PR versionado sob revisão e impossibilidade de mover tags mantêm os gates satisfeitos.
 
 ## Project Structure
 
@@ -68,18 +69,16 @@ specs/001-versionamento-por-sprint/
 ### Source Code (repository root)
 
 ```text
-.github/workflows/version-preview.yml       # proposto
-.github/workflows/version-publish.yml       # proposto
-scripts/versioning/                       # adaptadores, checagens e publicação
-docs/versioning.md                        # chamadas curtas e matriz de perfis
+.github/workflows/version-preview.yml   # check de PR, leitura
+.github/workflows/version-publish.yml   # preparação pós-merge e publicação
+scripts/versioning/                    # validações por fase, adaptadores, reconciliação
+docs/versioning.md                     # contrato, migração e roteiro LocalLabs
 ```
 
-**Structure Decision**: Nenhum workflow reutilizável de versionamento existe hoje.
-O diretório `.github/ISSUE_TEMPLATE/` atual não é alterado por esta feature.
-Os modelos e os testes de integração local ficam no repositório externo
-`GersonTekSystem/LocalLabs`, em `examples/` e `tests/versioning/`, conforme a
-orientação do usuário; nele, o caller permanece inativo até existir ref estável
-e configuração de homologação no GitHub.
+**Structure Decision**: Os dois workflows e scripts já existem no compartilhado;
+serão adaptados sem alterar templates de issue. Os exemplos e testes locais estão
+no consumidor externo `GersonTekSystem/LocalLabs`; seu caller de publicação só
+deve ser ativado após revisão fixa, proteção, ambiente e ensaio das prévias.
 
 ## Complexity Tracking
 
