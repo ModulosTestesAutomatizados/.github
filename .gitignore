@@ -7,4 +7,15 @@
 .DS_Store
 Thumbs.db
 node_modules/
-coverage/
+coverage/.opencode/node_modules/
+node_modules/
+*.log
+.env.local
+.env.*.local
+.envrc
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
