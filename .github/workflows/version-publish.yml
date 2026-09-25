@@ -33,6 +33,8 @@ on:
         value: ${{ jobs.publish.outputs.version }}
       tag:
         value: ${{ jobs.publish.outputs.tag }}
+      published_sha:
+        value: ${{ jobs.publish.outputs.published_sha }}
       release_url:
         value: ${{ jobs.publish.outputs.release_url }}
       outcome:
@@ -55,6 +57,7 @@ jobs:
     outputs:
       version: ${{ steps.publish.outputs.version }}
       tag: ${{ steps.publish.outputs.tag }}
+      published_sha: ${{ steps.publish.outputs.published_sha }}
       release_url: ${{ steps.publish.outputs.release_url }}
       outcome: ${{ steps.publish.outputs.outcome }}
       version_pr_url: ${{ steps.publish.outputs.version_pr_url }}

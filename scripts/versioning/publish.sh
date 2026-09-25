@@ -40,17 +40,31 @@ fi
 
 report() {
   local outcome="$1" url="${2:-}"
+  local published_sha=''
+  [[ "$outcome" == published || "$outcome" == already-published ]] && published_sha="$sha"
   if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    printf 'version=%s\ntag=%s\nrelease_url=%s\noutcome=%s\n' "$version" "$tag" "$url" "$outcome" >> "$GITHUB_OUTPUT"
+    printf 'version=%s\ntag=%s\npublished_sha=%s\nrelease_url=%s\noutcome=%s\n' "$version" "$tag" "$published_sha" "$url" "$outcome" >> "$GITHUB_OUTPUT"
   fi
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     printf '### Publicação %s\nVersão: %s · tag: %s · commit: %s\n' "$outcome" "$version" "$tag" "$sha" >> "$GITHUB_STEP_SUMMARY"
   fi
 }
 
+get_optional_api() {
+  local response
+  if response=$(gh api "$1" 2>&1); then
+    printf '%s' "$response"
+  elif [[ "$response" == *'HTTP 404'* ]]; then
+    return 4
+  else
+    printf '%s\n' "$response" >&2
+    return 1
+  fi
+}
+
 current_ref_sha() {
   local payload type object_sha
-  payload=$(gh api "repos/$repo/git/ref/tags/$tag" 2>/dev/null) || return 1
+  payload=$(get_optional_api "repos/$repo/git/ref/tags/$tag") || return $?
   type=$(node -p 'JSON.parse(process.argv[1]).object.type' "$payload")
   object_sha=$(node -p 'JSON.parse(process.argv[1]).object.sha' "$payload")
   if [[ "$type" == tag ]]; then
@@ -62,16 +76,6 @@ current_ref_sha() {
   printf '%s' "$object_sha"
 }
 
-latest=$(git tag --list "$prefix*" --sort=-v:refname)
-latest=${latest%%$'\n'*}
-if [[ -n "$latest" && "$latest" != "$tag" ]]; then
-  older=${latest#"$prefix"}
-  if [[ $(node "$node_script" compare "$older" "$version") == none ]]; then
-    echo "Versão $version não supera a última tag $latest" >&2
-    exit 1
-  fi
-fi
-
 if ref_sha=$(current_ref_sha); then
   if [[ "$ref_sha" != "$sha" ]]; then
     report conflict
@@ -80,11 +84,22 @@ if ref_sha=$(current_ref_sha); then
   fi
 else
   ref_status=$?
-  [[ "$ref_status" == 1 ]] || { echo 'Tag remota existe mas não aponta para commit válido' >&2; exit 1; }
-  if gh api "repos/$repo/releases/tags/$tag" >/dev/null 2>&1; then
+  [[ "$ref_status" == 4 ]] || { echo 'Falha ao consultar a tag remota' >&2; exit 1; }
+  if release=$(get_optional_api "repos/$repo/releases/tags/$tag"); then
     report conflict
     echo "Release $tag existe sem referência de tag verificável; intervenção necessária" >&2
     exit 1
+  else
+    [[ $? == 4 ]] || exit 1
+  fi
+  latest=$(git tag --list "$prefix*" --sort=-v:refname)
+  latest=${latest%%$'\n'*}
+  if [[ -n "$latest" && "$latest" != "$tag" ]]; then
+    older=${latest#"$prefix"}
+    if [[ $(node "$node_script" compare "$older" "$version") == none ]]; then
+      echo "Versão $version não supera a última tag $latest" >&2
+      exit 1
+    fi
   fi
   # POST git/refs é create-only: uma execução concorrente não consegue sobrescrever.
   if ! gh api -X POST "repos/$repo/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha" >/dev/null; then
@@ -102,20 +117,23 @@ else
   fi
 fi
 
-if release=$(gh api "repos/$repo/releases/tags/$tag" 2>/dev/null); then
+if release=$(get_optional_api "repos/$repo/releases/tags/$tag"); then
   node -e 'const r=JSON.parse(process.argv[1]);if(r.tag_name!==process.argv[2]||(/^[0-9a-f]{40}$/.test(r.target_commitish??"")&&r.target_commitish!==process.argv[3]))process.exit(1)' \
     "$release" "$tag" "$sha" || { report conflict; echo 'Release existente diverge de tag/SHA' >&2; exit 1; }
   url=$(node -p 'JSON.parse(process.argv[1]).html_url' "$release")
   report already-published "$url"
   printf 'Release já publicada: %s\n' "$url"
   exit 0
+else
+  [[ $? == 4 ]] || exit 1
 fi
 
 if ! release=$(gh api -X POST "repos/$repo/releases" -f "tag_name=$tag" -f "target_commitish=$sha" -f "name=$tag" -f "body=$body"); then
   # Outra execução pode ter concluído a release entre o GET anterior e o POST.
   release=''
   for attempt in 1 2 3; do
-    if release=$(gh api "repos/$repo/releases/tags/$tag" 2>/dev/null); then break; fi
+    if release=$(get_optional_api "repos/$repo/releases/tags/$tag"); then break; fi
+    [[ $? == 4 ]] || exit 1
     sleep 1
   done
   if [[ -n "$release" ]]; then

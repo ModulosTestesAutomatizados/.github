@@ -19,7 +19,16 @@ case "$ADAPTER" in
     version=${version##*$'\n'}
     ;;
   go-gitsemver)
-    version=$(cd "$PROJECT_DIR" && "$ADAPTER_BIN" --branch "$TARGET_BRANCH" --commit "$GITHUB_SHA" --show-variable SemVer)
+    native_output=$(cd "$PROJECT_DIR" && "$ADAPTER_BIN" --branch "$TARGET_BRANCH" --commit "$GITHUB_SHA" -o json --explain)
+    version=$(node -e '
+      const result = JSON.parse(process.argv[1]);
+      const expectedSha = process.argv[2];
+      if (result.Sha !== expectedSha || typeof result.SemVer !== "string") {
+        console.error(`go-gitsemver returned SHA ${result.Sha ?? "missing"}; expected ${expectedSha}`);
+        process.exit(1);
+      }
+      process.stdout.write(result.SemVer);
+    ' "$native_output" "$GITHUB_SHA")
     ;;
 esac
 version=$(node "$node_script" stable "$version")

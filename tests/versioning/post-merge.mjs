@@ -103,13 +103,16 @@ if(url.endsWith('/pulls/4')){
   console.log(args.includes('--jq')?pr.body:JSON.stringify(pr));process.exit(0);
 }
 if(url.endsWith('/pulls/5')){console.log(args.includes('--jq')?s.pr.body:JSON.stringify(versionPr()));process.exit(0)}
+if(url.endsWith('/pulls')){console.log(JSON.stringify([{number:3,merged_at:'2026-09-24T11:00:00Z',
+  merge_commit_sha:s.originalSha,base:{ref:'develop'},head:{ref:'release/v1.2.3'},body:'Epic: #10'}]));process.exit(0)}
 if(url.endsWith('/git/ref/heads/main')){console.log(process.env.MOCK_REMOTE_SHA??git('rev-parse','refs/heads/main'));process.exit(0)}
 if(url.includes('/git/ref/tags/')){
-  if(!s.tagSha)process.exit(1);
+  if(process.env.MOCK_TAG_ERROR){console.error('gh: Forbidden (HTTP 403)');process.exit(1)}
+  if(!s.tagSha){console.error('gh: Not Found (HTTP 404)');process.exit(1)}
   console.log(JSON.stringify({object:{type:'commit',sha:s.tagSha}}));process.exit(0);
 }
 if(url.includes('/releases/tags/')){
-  if(!s.release)process.exit(1);console.log(JSON.stringify(s.release));process.exit(0);
+  if(!s.release){console.error('gh: Not Found (HTTP 404)');process.exit(1)}console.log(JSON.stringify(s.release));process.exit(0);
 }
 if(args.includes('POST')&&url.endsWith('/git/refs')){
   if(s.tagSha)process.exit(1);s.tagSha=args.find(a=>a.startsWith('sha=')).slice(4);save();console.log('{}');process.exit(0);
@@ -176,6 +179,7 @@ console.error('Comando gh inesperado: '+args.join(' '));process.exit(1);
   result = run(versionMergeSha);
   assert.equal(result.status, 0, result.stderr);
   assert.match(readFileSync(output, 'utf8'), /outcome=published/);
+  assert.match(readFileSync(output, 'utf8'), new RegExp(`published_sha=${versionMergeSha}`));
   assert.equal(state().tagSha, versionMergeSha);
   assert.equal(state().release.tag_name, expectedTag);
   for (let i = 0; i < 10; i++) {
@@ -183,6 +187,12 @@ console.error('Comando gh inesperado: '+args.join(' '));process.exit(1);
     assert.equal(result.status, 0, result.stderr);
     assert.match(readFileSync(output, 'utf8'), /outcome=already-published/);
   }
+  git('tag', 'v99.0.0', versionMergeSha);
+  result = run(versionMergeSha);
+  assert.equal(result.status, 0, 'an older valid rerun must reconcile before latest-tag validation');
+  assert.match(readFileSync(output, 'utf8'), /outcome=already-published/);
+  result = run(versionMergeSha, { MOCK_TAG_ERROR: '1' });
+  assert.notEqual(result.status, 0, 'API authorization errors must never look like missing tags');
   git('switch', '--detach', originalSha);
   result = run(originalSha);
   assert.equal(result.status, 0, result.stderr);
