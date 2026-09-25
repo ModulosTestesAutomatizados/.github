@@ -1,6 +1,6 @@
 # Implementation Plan: Revisão SonarQube em PRs
 
-**Branch**: `feature/sdd` (planejamento) | **Date**: 2026-09-23 | **Spec**: [spec.md](spec.md)
+**Branch**: `feature/issue-3` (base `master`) | **Date**: 2026-09-25 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/002-revisao-sonarqube-pr/spec.md`
 
@@ -68,6 +68,7 @@ specs/002-revisao-sonarqube-pr/
 scripts/sonarqube/sync-project-status.* # proposto: adaptação ao Project com privilégios separados
 docs/sonarqube-pr.md                    # proposto: chamada e ruleset
 tests/sonarqube/                       # proposto: cenários de consumo
+.opencode/skills/quality-workflows/SKILL.md # proposto: prática versionada de reuso e análise local
 ```
 
 **Structure Decision**: nenhum workflow de análise existe hoje; cliente configura o check

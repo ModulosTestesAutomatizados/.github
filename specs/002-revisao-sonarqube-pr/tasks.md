@@ -79,6 +79,7 @@ ausência de vínculo/credencial não modifica outros itens.
 
 - [ ] T014 Documentar binding SonarQube/GitHub, check obrigatório, Project opcional, privilégios e referência fixa em `docs/sonarqube-pr.md`.
 - [ ] T015 Executar cenários de `specs/002-revisao-sonarqube-pr/quickstart.md` e guardar evidências em `tests/sonarqube/validation-results.md`.
+- [ ] T016 Criar `.opencode/skills/quality-workflows/SKILL.md` com caller reutilizável, gate e ferramentas locais, validando exemplos contra `tests/sonarqube/fixtures/caller.yml` e docs de consumo.
 
 ## Dependencies & Execution Order
 

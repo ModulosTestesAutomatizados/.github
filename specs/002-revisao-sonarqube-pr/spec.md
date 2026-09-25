@@ -1,6 +1,6 @@
 # Feature Specification: Revisão SonarQube em PRs
 
-**Feature Branch**: `feature/sdd` (planejamento; branch de entrega ainda não criada)
+**Feature Branch**: `feature/issue-3` (PR para `master`; base da stack #3 → #6 → #7)
 
 **Created**: 2026-09-23
 
@@ -99,6 +99,8 @@ temporários; histórico de resultados permanece disponível.
   cancelamento da execução; relatório e histórico DEVEM permanecer acessíveis.
 - **FR-007**: O repositório DEVE documentar integração, secrets e permissões mínimas,
   configuração do gate e ativação do check obrigatório no consumidor.
+- **FR-008**: Uma skill versionada no repositório DEVE descrever o contrato de caller,
+  o gate SonarQube e opções locais de análise coerentes com a documentação de consumo.
 
 ### Key Entities
 
