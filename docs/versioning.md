@@ -76,7 +76,7 @@ revise a lista de artefatos permitidos antes da adoção.
 ## Caller Go da primeira liberação
 
 O ensaio Go usa a revisão fixa
-`ce1ad6bcaba9a27d86101984d6ef348c5dd0d583` nas duas chamadas. A CI Go
+`8b0c6a372ab560400a735bbe42a8a39af823cacf` nas duas chamadas. A CI Go
 reutilizável do consumidor deve executar teste, análise e build para o **mesmo
 push**; o job de publicação depende dela. No LocalLabs, `master` é a principal,
 `release/v1.0.0` nomeia a sprint, e a versão inicial da aplicação é `0.0.1`.
@@ -98,7 +98,7 @@ jobs:
   validate-pr:
     if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
     permissions: {contents: read, pull-requests: read, issues: read}
-    uses: ModulosTestesAutomatizados/.github/.github/workflows/version-preview.yml@ce1ad6bcaba9a27d86101984d6ef348c5dd0d583
+    uses: ModulosTestesAutomatizados/.github/.github/workflows/version-preview.yml@8b0c6a372ab560400a735bbe42a8a39af823cacf
     with:
       adapter: go-gitsemver
       project_path: examples/go-gitsemver
@@ -110,7 +110,7 @@ jobs:
   publish:
     needs: go-ci
     permissions: {contents: write, pull-requests: read, issues: read}
-    uses: ModulosTestesAutomatizados/.github/.github/workflows/version-publish.yml@ce1ad6bcaba9a27d86101984d6ef348c5dd0d583
+    uses: ModulosTestesAutomatizados/.github/.github/workflows/version-publish.yml@8b0c6a372ab560400a735bbe42a8a39af823cacf
     with:
       adapter: go-gitsemver
       project_path: examples/go-gitsemver
