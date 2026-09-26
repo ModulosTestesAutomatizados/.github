@@ -78,6 +78,10 @@ branches:
   const multiple = calculate();
   assert.equal(multiple, '2.1.0', 'the highest increment across one sprint is applied once');
   assert.notEqual(multiple, '9.9.9', 'milestone label must not drive application version');
+  writeFileSync(join(repo, '.github', 'GitVersion.yml'), 'mode: InvalidMode\n');
+  git('add', '.github/GitVersion.yml');
+  git('commit', '-m', 'test: invalid native configuration');
+  assert.throws(calculate, 'invalid native configuration must fail before publication');
   console.log('Real go-gitsemver: bootstrap, fix, feat, breaking change and combined sprint passed');
 } finally {
   rmSync(repo, { recursive: true, force: true });

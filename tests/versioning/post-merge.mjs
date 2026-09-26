@@ -82,7 +82,7 @@ const git=(...a)=>cp.execFileSync('git',['--git-dir='+process.env.MOCK_BARE,...a
 const versionPr=()=>({number:5,merged_at:s.versionMergeSha?'2026-09-24T12:00:00Z':null,
   merge_commit_sha:s.versionMergeSha,head:{ref:s.pr?.branch},base:{ref:'main'},body:s.pr?.body});
 if(args[0]==='auth') process.exit(0);
-if(args[0]==='pr'&&args[1]==='view'){console.log('APPROVED');process.exit(0)}
+if(args[0]==='pr'&&args[1]==='view'){console.log(process.env.MOCK_APPROVED?'REVIEW_REQUIRED':'APPROVED');process.exit(0)}
 if(args[0]==='pr'&&args[1]==='list'){console.log(JSON.stringify(s.pr?[{number:5,url:s.pr.url,state:s.versionMergeSha?'MERGED':'OPEN'}]:[]));process.exit(0)}
 if(args[0]==='pr'&&args[1]==='create'){
  const body=args[args.indexOf('--body')+1],branch=args[args.indexOf('--head')+1];
@@ -93,13 +93,14 @@ if(url.endsWith('/milestones')){console.log(JSON.stringify([{number:2,title:'v1.
 if(url.endsWith('/issues/10')){console.log(JSON.stringify({number:10,title:'v1.2.3',state:'closed',milestone:{title:'v1.2.3',state:'closed',open_issues:0}}));process.exit(0)}
 if(url.endsWith('/issues')){console.log(JSON.stringify([{number:10,title:'v1.2.3',state:'closed'}]));process.exit(0)}
 if(url.includes('/commits/')&&url.endsWith('/pulls')){
+  if(process.env.MOCK_NO_PR){console.log('[]');process.exit(0)}
   const sha=url.split('/')[4];console.log(JSON.stringify(sha===s.originalSha?
     [{number:4,merged_at:'2026-09-24T12:00:00Z',merge_commit_sha:s.originalSha,
-      base:{ref:'main'},head:{ref:'develop'}}]:sha===s.versionMergeSha?[versionPr()]:[]));process.exit(0);
+      base:{ref:'main'},head:{ref:process.env.MOCK_RELEASE_HEAD?'release/v1.2.3':'develop'}}]:sha===s.versionMergeSha?[versionPr()]:[]));process.exit(0);
 }
 if(url.endsWith('/pulls/4')){
   const pr={number:4,merged_at:'2026-09-24T12:00:00Z',merge_commit_sha:s.originalSha,
-    base:{ref:'main'},head:{ref:'develop'},body:'Epic: #10\\nHomologação: aprovada'};
+    base:{ref:'main'},head:{ref:'develop'},body:process.env.MOCK_HOMOLOGATION?'Epic: #10':'Epic: #10\\nHomologação: aprovada'};
   console.log(args.includes('--jq')?pr.body:JSON.stringify(pr));process.exit(0);
 }
 if(url.endsWith('/pulls/5')){console.log(args.includes('--jq')?s.pr.body:JSON.stringify(versionPr()));process.exit(0)}
@@ -145,6 +146,11 @@ console.error('Comando gh inesperado: '+args.join(' '));process.exit(1);
   assert.equal(state().tagSha, null);
   result = run(originalSha, { MOCK_REMOTE_SHA: '0000000000000000000000000000000000000000' });
   assert.notEqual(result.status, 0);
+  for (const overrides of [{ MOCK_NO_PR: '1' }, { MOCK_RELEASE_HEAD: '1' },
+    { MOCK_APPROVED: '1' }, { MOCK_HOMOLOGATION: '1' }]) {
+    assert.notEqual(run(originalSha, overrides).status, 0, 'publication requires an approved develop merge');
+    assert.equal(state().tagSha, null);
+  }
   for (const overrides of [{ GITHUB_EVENT_NAME: 'pull_request' }, { GITHUB_REF_NAME: 'develop' },
     { GITHUB_SHA: '0000000000000000000000000000000000000000' }]) {
     assert.notEqual(run(originalSha, overrides).status, 0);
