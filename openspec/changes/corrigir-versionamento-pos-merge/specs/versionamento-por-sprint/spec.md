@@ -58,6 +58,8 @@ A solução MUST iniciar o cálculo da versão definitiva somente após o merge 
 ### Requirement: Publicação segura e vinculada ao commit versionado
 A solução MUST restringir publicação à branch principal após merge e aprovação/homologação, criar tag e GitHub Release somente para o SHA que contém a versão aplicável e preservar tags existentes. `changelog_path` MUST ser opcional e apenas consumir arquivo existente, sem exigir changelog de homologação.
 
+Na primeira liberação, `go-gitsemver` MUST calcular no SHA integrado com a configuração nativa do consumidor, fornecer `SemVer` e `Sha` conferidos e explicar o cálculo. O caller Go MUST depender da CI Go do mesmo push. A saída `published_sha` MUST ser preenchida em publicação ou reconciliação; a concorrência MUST ficar só no workflow central por repositório/branch, sem cancelamento. PR `release → principal` MUST NOT ser elegível como merge funcional.
+
 #### Scenario: Publicação íntegra
 - **WHEN** a versão pós-merge está pronta e o SHA publicável foi integrado na branch principal
 - **THEN** tag e release correspondem à mesma versão e ao SHA publicável, com changelog quando houver
@@ -65,6 +67,14 @@ A solução MUST restringir publicação à branch principal após merge e aprov
 #### Scenario: Reexecução no mesmo commit
 - **WHEN** a tag e a release já correspondem à versão e ao SHA publicável
 - **THEN** a execução informa publicação já existente sem duplicar release nem recalcular segunda versão
+
+#### Scenario: Reexecução após uma versão posterior
+- **WHEN** a tag e a release de um SHA antigo continuam corretas, mas outra versão já foi publicada
+- **THEN** a execução antiga retorna `already-published` e `published_sha` original antes de aplicar a regra de progressão de versão
+
+#### Scenario: Falha da API ao consultar tag ou release
+- **WHEN** a API retorna erro de autenticação ou serviço em vez de HTTP 404
+- **THEN** a execução falha sem criar tag ou release e sem tratar o recurso como ausente
 
 #### Scenario: Tag existente em outro commit
 - **WHEN** a tag desejada aponta para SHA divergente

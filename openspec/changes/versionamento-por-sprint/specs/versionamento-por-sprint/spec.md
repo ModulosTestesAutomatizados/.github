@@ -2,41 +2,41 @@
 
 ## Purpose
 
-Permitir que repositórios consumidores obtenham uma prévia semântica de entregas de uma sprint sem publicação prematura e publiquem versões rastreáveis e seguras somente após a integração aprovada.
+Permitir que repositórios consumidores validem entregas e homologações sem versionamento antecipado e publiquem versões rastreáveis após a integração aprovada. Este delta deve ser lido com `corrigir-versionamento-pos-merge`, que substitui o contrato anterior de prévia SemVer.
 
 ## ADDED Requirements
 
-### Requirement: Prévia sem efeitos de publicação
-A solução MUST disponibilizar uma chamada reutilizável de prévia para PRs de entrega, associando o candidato à sprint/release e ao conjunto de commits analisado. MUST retornar `bump` (`major`, `minor`, `patch` ou `none`), `candidate_version` e `summary` sem criar tags, releases ou modificar arquivos do consumidor.
+### Requirement: Check contextual sem efeitos de publicação
+A solução MUST disponibilizar uma chamada reutilizável de leitura para PRs feature → release, release → develop e develop → principal, retornando `phase` e `summary` sem calcular versão candidata, criar tags/releases ou modificar arquivos do consumidor.
 
 #### Scenario: PR válido para branch de release
 - **WHEN** um PR de entrega para `release/<milestone>` tem metadados e commits interpretáveis
-- **THEN** o consumidor recebe a prévia semântica identificando a sprint, e nenhuma versão definitiva é publicada
+- **THEN** o consumidor recebe um check de vínculo à sub-issue e sprint, e nenhuma versão definitiva é publicada
 
-#### Scenario: PR empilhado ou destinado a develop
-- **WHEN** um PR empilhado ou destinado a `develop` solicita a análise
-- **THEN** o resultado fica restrito à prévia e nenhuma tag ou release é criada
+#### Scenario: Integração por develop
+- **WHEN** a release é integrada a `develop` e depois `develop` à principal com os gates exigidos
+- **THEN** cada transição recebe seu check contextual e nenhuma tag ou release é criada pelo check
 
 #### Scenario: Metadados ou commits inválidos
-- **WHEN** faltam metadados mínimos de sprint/issue ou os commits não permitem cálculo semântico
-- **THEN** a prévia falha com diagnóstico acionável e não publica artefatos
+- **WHEN** faltam metadados mínimos de sprint/issue, revisão ou homologação da transição
+- **THEN** o check falha com diagnóstico acionável e não publica artefatos
 
 ### Requirement: Adaptação por perfil do consumidor
 A solução MUST aceitar explicitamente os perfis `standard-version`, `changesets`, `jgitver` e `go-gitsemver`, respeitando a ferramenta e a convenção de versão configuradas pelo consumidor. MUST recusar perfil desconhecido ou ferramenta necessária ausente com diagnóstico, sem executar comandos arbitrários recebidos do PR.
 
 #### Scenario: Perfis suportados
 - **WHEN** o consumidor seleciona um dos quatro perfis e fornece a configuração necessária
-- **THEN** a prévia e a publicação usam o cálculo de versão desse perfil e devolvem resultados no contrato comum
+- **THEN** o check valida a transição e a publicação pós-merge usa o cálculo nativo desse perfil; a primeira liberação ativa apenas `go-gitsemver`
 
 #### Scenario: Perfil inválido ou ferramenta indisponível
 - **WHEN** o perfil não é suportado ou falta a ferramenta necessária no consumidor
 - **THEN** a operação é bloqueada com indicação do ajuste necessário, sem publicar tag ou release
 
 ### Requirement: Publicação condicionada à integração aprovada
-A solução MUST disponibilizar uma chamada reutilizável de publicação separada da prévia, utilizável somente após o merge no destino de publicação configurado e após a conclusão da sprint, revisão humana e homologação exigidas pelo consumidor. MUST vincular uma versão única, tag e release ao commit integrado e incluir changelog quando o perfil do consumidor o produzir. A versão da sprint MUST NOT substituir automaticamente a versão do consumidor.
+A solução MUST disponibilizar uma chamada reutilizável de publicação separada do check, utilizável somente após o merge de `develop` na principal e após conclusão da sprint, revisão humana e homologação exigidas pelo consumidor. MUST vincular versão, tag, `published_sha` e release ao commit publicável e incluir changelog quando o perfil do consumidor o produzir. A versão da sprint MUST NOT substituir a versão do consumidor.
 
 #### Scenario: Release aprovada e integrada
-- **WHEN** a sprint está concluída, o PR de release foi revisado e homologado e o commit está integrado na branch de publicação
+- **WHEN** a sprint está concluída, `release → develop` e `develop → principal` foram revisados/homologados e o commit está integrado na branch de publicação
 - **THEN** são publicados versão, tag e release correspondentes ao commit integrado, com changelog quando disponível
 
 #### Scenario: Aprovação ou homologação pendente
@@ -48,7 +48,7 @@ A solução MUST disponibilizar uma chamada reutilizável de publicação separa
 - **THEN** a operação falha sem publicar nem modificar tags
 
 ### Requirement: Reconciliação sem perda de histórico
-A publicação MUST detectar colisões entre execuções, preservar tags existentes e reconhecer reexecução no mesmo commit sem duplicar release. MUST expor resultados de publicação (`published`, `already-published` ou `conflict`) e diagnóstico verificável para falha parcial ou divergência entre versão, tag e release.
+A publicação MUST detectar colisões entre execuções, preservar tags existentes e reconhecer reexecução no mesmo commit, inclusive após uma versão posterior, sem duplicar release. MUST expor `published_sha`, resultados (`published`, `already-published` ou `conflict`) e diagnóstico verificável para falha parcial ou divergência entre versão, tag e release. Somente HTTP 404 indica ausência de recurso.
 
 #### Scenario: Publicações concorrentes para a mesma versão
 - **WHEN** duas execuções tentam publicar a mesma versão

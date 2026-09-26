@@ -2,7 +2,7 @@
 
 **Feature Branch**: `feature/issue-2` | **Created**: 2026-09-23 | **Revised**: 2026-09-24
 
-**Status**: Correção do contrato para integração e versionamento pós-merge
+**Status**: Liberação inicial Go em homologação; issue #2 permanece aberta para os demais perfis
 
 **Input**: [Issue #2](https://github.com/ModulosTestesAutomatizados/.github/issues/2) e a decisão posterior registrada em [OpenSpec](../../openspec/changes/corrigir-versionamento-pos-merge/proposal.md). A versão anterior desta especificação exigia prévia de SemVer e atualização de versão antes do merge; essas premissas foram substituídas pela decisão do responsável.
 
@@ -79,6 +79,9 @@ Como mantenedor quero reexecutar a publicação sem corromper tags e validar no 
 - **FR-007**: Tag e release DEVEM apontar ao SHA publicável com a versão persistida (quando houver), somente depois dos gates exigidos pelo consumidor.
 - **FR-008**: Reexecução, concorrência e falhas parciais DEVEM preservar tags e releases; conflitos DEVEM ser comunicados sem sobrescrita.
 - **FR-009**: A interface DEVE documentar gatilhos, inputs/outputs, permissões e referência fixa do workflow; o consumidor DEVE executar build/testes próprios.
+- **FR-010**: O perfil Go DEVE usar o JSON nativo de `go-gitsemver` no SHA integrado, validar `SemVer` e `Sha` e registrar a explicação do cálculo, sem algoritmo paralelo, PR artificial ou `versioning_token`.
+- **FR-011**: O publicador DEVE retornar `published_sha` em publicação ou reconciliação; uma reexecução antiga válida DEVE ser reconciliada antes de comparar com tags posteriores. Erro de API/autenticação não pode ser interpretado como ausência de recurso.
+- **FR-012**: O caller Go DEVE depender de CI Go de teste, análise e build do mesmo push. A concorrência é configurada somente no workflow central, por repositório e branch, sem cancelar execuções anteriores.
 
 ### Key Entities
 
@@ -92,7 +95,7 @@ Como mantenedor quero reexecutar a publicação sem corromper tags e validar no 
 ### Measurable Outcomes
 
 - **SC-001**: As três transições válidas de PR passam pelo check obrigatório em cada rodada de ensaio, sem tags/releases antes do merge.
-- **SC-002**: Quatro perfis publicam uma versão em SHA correto por rodada; nenhum PR com gate pendente publica.
+- **SC-002**: A primeira liberação publica Go no SHA correto no LocalLabs com aprovação humana. `jgitver`, Changesets/Turbo e `standard-version` exigem rodadas posteriores antes de concluir a issue #2; nenhum PR com gate pendente publica.
 - **SC-003**: Dez reexecuções e duas execuções concorrentes preservam tags existentes e não duplicam releases ou PRs de versionamento.
 - **SC-004**: O mantenedor identifica causa e ação de retomada no resultado de falha sem depender de logs locais simulados.
 
@@ -100,4 +103,5 @@ Como mantenedor quero reexecutar a publicação sem corromper tags e validar no 
 
 - A branch principal é descoberta/configurada pelo consumidor (`main` ou `master`); proteção de branch e aprovação de ambiente permanecem sob controle humano.
 - LocalLabs pode usar branches, milestones e tags de ensaio distintas sem preservar um roadmap de produção.
+- A milestone `v1.0.0` do ensaio Go não fixa a versão inicial da aplicação; o bootstrap `v0.0.1` usa configuração nativa temporária no LocalLabs.
 - A mudança OpenSpec [corrigir-versionamento-pos-merge](../../openspec/changes/corrigir-versionamento-pos-merge/specs/versionamento-por-sprint/spec.md) detalha os cenários normativos desta correção; os demais artefatos Spec Kit devem permanecer alinhados a ela.
