@@ -46,6 +46,16 @@ branches:
   commit('feat: bootstrap');
   assert.equal(calculate(), '0.0.1', 'native bootstrap version');
   git('tag', 'v0.0.1');
+  git('switch', '-c', 'release/v9.9.9');
+  commit('fix: sprint payload');
+  const releaseSha = git('rev-parse', 'HEAD');
+  const releaseResult = JSON.parse(execFileSync(tool,
+    ['--branch', 'release/v9.9.9', '--commit', releaseSha, '-o', 'json'],
+    { cwd: repo, encoding: 'utf8' }));
+  assert.equal(releaseResult.Sha, releaseSha);
+  assert.ok(!releaseResult.SemVer.startsWith('9.9.9'),
+    'the sprint branch name must not become the application version');
+  git('switch', 'master');
 
   writeFileSync(join(repo, '.github', 'GitVersion.yml'), `mode: Mainline
 base-version: 0.0.0
