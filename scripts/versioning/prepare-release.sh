@@ -23,12 +23,23 @@ case "$ADAPTER" in
     version=$(node -e '
       const result = JSON.parse(process.argv[1]);
       const expectedSha = process.argv[2];
-      if (result.Sha !== expectedSha || typeof result.SemVer !== "string") {
+      if ((result.Sha !== expectedSha && result.Sha !== "") || typeof result.SemVer !== "string") {
         console.error(`go-gitsemver returned SHA ${result.Sha ?? "missing"}; expected ${expectedSha}`);
         process.exit(1);
       }
       process.stdout.write(result.SemVer);
     ' "$native_output" "$GITHUB_SHA")
+    native_sha=$(node -p 'JSON.parse(process.argv[1]).Sha' "$native_output")
+    if [[ -z "$native_sha" ]]; then
+      version=$(node "$node_script" stable "$version")
+      tagged_sha=$(git rev-parse -q --verify "refs/tags/v${version}^{commit}") || {
+        echo "go-gitsemver omitiu Sha e não há tag v$version no checkout" >&2; exit 1;
+      }
+      [[ "$tagged_sha" == "$GITHUB_SHA" ]] || {
+        echo "go-gitsemver omitiu Sha e a tag v$version não aponta para $GITHUB_SHA" >&2; exit 1;
+      }
+      echo "go-gitsemver omitiu Sha no commit já tagueado; v$version aponta para $GITHUB_SHA" >&2
+    fi
     ;;
 esac
 version=$(node "$node_script" stable "$version")

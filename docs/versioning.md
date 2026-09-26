@@ -128,6 +128,12 @@ sem aguardar outro evento `push` de tag (o `GITHUB_TOKEN` não o dispararia).
 Antes de usar a release em produção, confira que `published_sha` é o commit
 integrado e que `outcome` é `published` ou `already-published`.
 
+Na revisão fixada de `go-gitsemver`, a consulta de um commit já tagueado pode
+retornar `Sha` vazio mesmo com `SemVer` correto. Para uma reexecução, o
+publicador só aceita esse caso quando a tag `v<SemVer>` aponta exatamente para
+`GITHUB_SHA`; ele também confere a referência e a release remotas antes de
+retornar `already-published`. Um SHA divergente continua bloqueado.
+
 ## Roteiro de homologação no LocalLabs
 
 1. Com acesso de escrita, crie `develop` e uma `release/vX.Y.Z` **distinta por

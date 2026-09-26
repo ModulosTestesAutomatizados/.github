@@ -42,6 +42,10 @@ console.log(JSON.stringify({SemVer:process.env.TEST_VERSION,Sha:process.env.TEST
   const wrongCommit = run('0.0.1', 'b'.repeat(40));
   assert.notEqual(wrongCommit.status, 0, 'must reject a version calculated for another commit');
 
+  const emptyCommitWithoutTag = run('0.0.1', '');
+  assert.notEqual(emptyCommitWithoutTag.status, 0,
+    'an empty native SHA is only valid when the matching tag points at the integrated commit');
+
   const prerelease = run('0.0.2-beta.1', commit);
   assert.notEqual(prerelease.status, 0, 'must reject prereleases');
 
