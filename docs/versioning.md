@@ -134,6 +134,27 @@ publicador só aceita esse caso quando a tag `v<SemVer>` aponta exatamente para
 `GITHUB_SHA`; ele também confere a referência e a release remotas antes de
 retornar `already-published`. Um SHA divergente continua bloqueado.
 
+### Evidência hospedada no LocalLabs
+
+O [primeiro push publicado](https://github.com/GersonTekSystem/LocalLabs/actions/runs/36266024805/attempts/1)
+criou a [release v0.0.1](https://github.com/GersonTekSystem/LocalLabs/releases/tag/v0.0.1)
+no SHA integrado `db1700045c6e618f539b3de6258e4877ffc85069`. Sua
+reexecução revelou o `Sha` vazio do adaptador em commit já tagueado e falhou
+sem mover a tag. Após a correção, o fluxo revisado
+([PRs #10–#12](https://github.com/GersonTekSystem/LocalLabs/pull/12)) removeu
+o bootstrap temporário e publicou a
+[release v0.0.2](https://github.com/GersonTekSystem/LocalLabs/releases/tag/v0.0.2)
+no SHA `fcb456ea9689f9c554e5ec335435fb024faa8a1d`, calculado pelo
+Conventional Commit `fix:`. A
+[tentativa 2](https://github.com/GersonTekSystem/LocalLabs/actions/runs/36268700982/attempts/2)
+da segunda execução retornou `already-published` após nova aprovação do
+ambiente, sem criar tag ou release adicional. A evidência de PRs, configuração,
+aprovações e SHAs está na
+[sub-issue #9 do LocalLabs](https://github.com/GersonTekSystem/LocalLabs/issues/9#issuecomment-5849547858).
+
+Os ensaios hospedados extensos de dez reexecuções, concorrência, recuperação
+de release e conflito remoto continuam como trabalho da issue central #2.
+
 ## Roteiro de homologação no LocalLabs
 
 1. Com acesso de escrita, crie `develop` e uma `release/vX.Y.Z` **distinta por
