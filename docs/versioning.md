@@ -73,60 +73,98 @@ ao **consumidor**, não ao workflow de versionamento. Para configurações de
 `standard-version` que atualizam outros arquivos além dos acima, estenda e
 revise a lista de artefatos permitidos antes da adoção.
 
-## Caller Go da primeira liberação
+## Caller Go copiável da primeira liberação
 
-O ensaio Go usa a revisão fixa
-`8b0c6a372ab560400a735bbe42a8a39af823cacf` nas duas chamadas. A CI Go
-reutilizável do consumidor deve executar teste, análise e build para o **mesmo
-push**; o job de publicação depende dela. No LocalLabs, `master` é a principal,
-`release/v1.0.0` nomeia a sprint, e a versão inicial da aplicação é `0.0.1`.
-Configure `.github/GitVersion.yml` no consumidor: `is-release-branch: false`
-para `release`, e use `base-version: 0.0.0`, `next-version: 0.0.1` e
-`commit-message-incrementing: Disabled` apenas no bootstrap. Remova as duas
-últimas opções após publicar `v0.0.1` para reativar Conventional Commits.
+O [diretório `examples/callers/go/`](../examples/callers/go/) contém três arquivos
+para copiar ao **repositório consumidor**: `.github/workflows/go-publish.yml`
+(caller da prévia e da publicação), `.github/workflows/go-ci.yml` (teste, análise
+e build do mesmo push) e `.github/GitVersion.yml` (configuração nativa do
+go-gitsemver). Os scripts e workflows centrais permanecem neste repositório.
+O caller usa a revisão fixa `8b0c6a372ab560400a735bbe42a8a39af823cacf`
+nas duas chamadas; ela é ancestral da `master` central. Para uma nova revisão,
+altere **ambas** as referências somente após revisão e homologação. Não use
+`@master` como contrato de consumo.
 
-```yaml
-name: Publicação Go do consumidor
-on:
-  pull_request:
-    types: [opened, reopened, synchronize, edited, ready_for_review]
-  pull_request_review:
-    types: [submitted, dismissed]
-  push:
-    branches: [master]
-jobs:
-  validate-pr:
-    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
-    permissions: {contents: read, pull-requests: read, issues: read}
-    uses: ModulosTestesAutomatizados/.github/.github/workflows/version-preview.yml@8b0c6a372ab560400a735bbe42a8a39af823cacf
-    with:
-      adapter: go-gitsemver
-      project_path: examples/go-gitsemver
-      release_branch: release/v1.0.0
-      target_branch: master
-  go-ci:
-    if: github.event_name == 'push' && github.ref_name == 'master'
-    uses: ./.github/workflows/go-ci.yml
-  publish:
-    needs: go-ci
-    permissions: {contents: write, pull-requests: read, issues: read}
-    uses: ModulosTestesAutomatizados/.github/.github/workflows/version-publish.yml@8b0c6a372ab560400a735bbe42a8a39af823cacf
-    with:
-      adapter: go-gitsemver
-      project_path: examples/go-gitsemver
-      release_branch: release/v1.0.0
-      target_branch: master
-      homologation_environment: homologation
-```
+### O que configurar no consumidor
 
-O check de PR usa `version-preview.yml` na **mesma revisão**. O workflow
-central já serializa as publicações por repositório e branch, sem cancelamento;
-não repita o grupo de concorrência no caller. Jobs posteriores usam
-`needs.publish.outputs.version`, `.tag`, `.published_sha` e `.release_url`.
-GoReleaser pode ser acionado no mesmo workflow após `publish` com esses dados,
-sem aguardar outro evento `push` de tag (o `GITHUB_TOKEN` não o dispararia).
-Antes de usar a release em produção, confira que `published_sha` é o commit
-integrado e que `outcome` é `published` ou `already-published`.
+1. Copie os três arquivos, ajuste a CI para o `go.mod` e comandos reais do
+   projeto e configure o repositório para permitir Actions reutilizáveis da
+   organização. O projeto Go deve possuir `go.mod`; o runner instala
+   go-gitsemver na revisão fixa `680c1c12d9a4f573a8da1b2e3ccebb3571b1cab6`.
+   O consumidor não precisa adicionar essa ferramenta ao `go.mod`.
+2. No caller, configure `project_path` (diretório relativo ao checkout, `.` para
+   raiz), `release_branch` (sprint atual, como `release/v1.0.0`),
+   `target_branch` (branch **padrão** protegida, `main` ou `master`) e
+   `homologation_environment` (nome exato do environment protegido). Mude
+   `on.push.branches` e o `if` de `go-ci` junto com `target_branch`. A prévia e
+   a publicação devem receber os mesmos valores de projeto e branches.
+3. Configure branch protection/rulesets para revisão humana e checks da prévia
+   e da CI nas integrações; crie o environment indicado com aprovação humana e
+   limite de deployment à branch principal. Prepare milestone e épica da sprint.
+   A milestone precisa estar fechada e sem issues abertas para publicar. O
+   fluxo exigido é `feature → release → develop → principal`; no corpo do PR
+   final, registre `Homologação: aprovada` após validar, além de aprovar o
+   deployment. Um comentário isolado não satisfaz o gate atual.
+4. Integre por PR, confira que a CI do push passou, aprove o deployment e
+   verifique tag/release no SHA do merge. A publicação só ocorre em `push` na
+   branch padrão e após os gates; a prévia de PR não escreve. O `GITHUB_TOKEN`
+   do job usa `contents: write`, `pull-requests: read`, `issues: read`; Go não
+   requer PAT, secret adicional nem PR artificial de versão. Não duplique a
+   concorrência no caller: o central serializa por repositório e branch.
+
+| Entrada do workflow | Valor Go | Impacto de alterar |
+| --- | --- | --- |
+| `adapter` | `go-gitsemver` | Seleciona a ferramenta e o formato da tag `vX.Y.Z`; outro valor muda o perfil de versionamento. |
+| `project_path` | `.` ou subdiretório Go | Define onde o adaptador roda; caminho inválido ou fora do checkout falha. Ajuste a CI para o mesmo módulo. |
+| `release_branch` | `release/vX.Y.Z` | Identifica a sprint e a proveniência dos PRs; **não** determina a versão da aplicação. Atualize por sprint nos dois jobs. |
+| `target_branch` | `main` ou `master` | Deve coincidir com a branch padrão e com o gatilho de push; divergência bloqueia publicação. |
+| `homologation_environment` | `homologation` ou outro nome protegido | Seleciona o gate humano antes da escrita; nome incorreto pode não aplicar a proteção pretendida. |
+| `changelog_path` | Omitido ou caminho relativo | Se o arquivo existir no commit publicável, seu conteúdo alimenta a release; caso contrário é usado resumo da sprint. |
+
+As saídas da prévia são `phase` (transição reconhecida) e `summary` (gates). Na
+publicação, `version` é `X.Y.Z`, `tag` é `vX.Y.Z`, `published_sha` é o SHA que
+recebeu a tag e `release_url` é o link da GitHub Release. `outcome` distingue
+`published`, `already-published`, `pending-version-pr` (perfil Node) e
+`conflict`; `version_pr_url` só se aplica ao PR de versão Node. Jobs posteriores
+devem depender de `publish` e usar, por exemplo,
+`needs.publish.outputs.version`, `.tag`, `.published_sha`, `.release_url` e
+`.outcome`. Confira `published_sha == github.sha` e `outcome` igual a
+`published` ou `already-published` antes de distribuir artefatos. GoReleaser
+pode ser acionado nesse mesmo workflow com essas saídas, sem esperar outro
+evento de tag criado por `GITHUB_TOKEN`.
+
+### Configuração nativa do go-gitsemver
+
+O exemplo `.github/GitVersion.yml` reproduz o **perfil permanente** homologado
+no LocalLabs, sem opções temporárias de bootstrap. A configuração fica no
+consumidor, não no workflow central. A [referência oficial da revisão
+fixa](https://github.com/MyCarrier-DevOps/go-gitsemver/blob/680c1c12d9a4f573a8da1b2e3ccebb3571b1cab6/docs/CONFIGURATION.md)
+documenta todos os valores. Estas são as decisões que mais afetam esta
+integração:
+
+| Opção | Valores úteis / padrão nativo | Impacto no caller Go |
+| --- | --- | --- |
+| `mode` | `Mainline`, `ContinuousDelivery` (padrão), `ContinuousDeployment` | `Mainline` aplica o maior incremento dos commits desde a tag uma vez; os outros modos podem produzir prereleases, recusadas pelo publicador estável. |
+| `base-version` | SemVer; padrão `1.0.0` | Base quando não há tag. `0.0.0` permitiu iniciar o laboratório abaixo de `1.0.0`; não substitui `next-version`. |
+| `next-version` | SemVer; ausente por padrão | Força exatamente a próxima versão até ser removido; use só para bootstrap controlado, pois deixá-lo causa conflito na publicação seguinte. |
+| `tag-prefix` | Regex; padrão `[vV]` | Determina quais tags a ferramenta lê. O publicador Go cria `vX.Y.Z`; um padrão incompatível faz a ferramenta ignorar releases anteriores. |
+| `commit-message-incrementing` | `Enabled` (padrão), `Disabled`, `MergeMessageOnly` | `Enabled` considera commits; `Disabled` ignora `fix:`/`feat:`; `MergeMessageOnly` considera apenas mensagens de merge. |
+| `commit-message-convention` | `Both` (padrão), `ConventionalCommits`, `BumpDirective` | Controla quais mensagens elevam patch/minor/major; `Both` aceita Conventional Commits e diretivas de bump. |
+| `mainline-increment` | `Aggregate` (padrão), `EachCommit` | Em `Mainline`, `Aggregate` aplica o maior incremento da rodada uma vez; `EachCommit` incrementa por commit e pode produzir outra versão. |
+| `branches.main.regex` | Regex para `master`/`main` | Deve reconhecer a branch definida em `target_branch`; regex divergente aplica outro perfil de branch. |
+| `branches.main.is-mainline` / `tag` | `true` / `''` no exemplo | Marca a principal como tronco e evita sufixo prerelease; sufixo não vazio é rejeitado na publicação. |
+| `branches.release.is-release-branch` | `false` no exemplo; padrão nativo `true` | Impede que `release/vX.Y.Z` forneça a versão-base da aplicação. A sprint não impõe SemVer. |
+| `branches.*.increment` | `None`, `Major`, `Minor`, `Patch`, `Inherit` | Define o incremento de base da branch; mudar pode alterar a versão mesmo sem modificar o caller. |
+
+Para reproduzir **somente o primeiro bootstrap** `v0.0.1` do laboratório, foram
+usados `base-version: 0.0.0`, `next-version: 0.0.1` e
+`commit-message-incrementing: Disabled`. Remova `next-version` e
+`commit-message-incrementing: Disabled` logo após `v0.0.1`; a segunda rodada
+com `fix:` produziu `v0.0.2`. Em outro consumidor, escolha a base pelo
+histórico de tags existente e examine `go-gitsemver --explain` antes de ativar
+publicação. O central consome o JSON nativo (`SemVer`, `Sha`) no SHA integrado;
+não calcula incrementos por conta própria. Prerelease, SHA divergente e
+configuração inválida bloqueiam a escrita.
 
 Na revisão fixada de `go-gitsemver`, a consulta de um commit já tagueado pode
 retornar `Sha` vazio mesmo com `SemVer` correto. Para uma reexecução, o
