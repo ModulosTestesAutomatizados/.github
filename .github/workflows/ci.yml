@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - "release/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        if: ${{ hashFiles('pom.xml') != '' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Validate Maven project
+        if: ${{ hashFiles('pom.xml') != '' }}
+        run: mvn -B verify
+
+      - name: Set up Node.js
+        if: ${{ hashFiles('package-lock.json', 'npm-shrinkwrap.json') != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install npm dependencies
+        if: ${{ hashFiles('package-lock.json', 'npm-shrinkwrap.json') != '' }}
+        run: npm ci
+
+      - name: Run npm tests when available
+        if: ${{ hashFiles('package.json') != '' }}
+        shell: bash
+        run: npm run test --if-present
+
+      - name: Run npm build when available
+        if: ${{ hashFiles('package.json') != '' }}
+        shell: bash
+        run: npm run build --if-present

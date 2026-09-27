@@ -6,6 +6,20 @@ somente quando o merge na branch padrão realmente deva encerrá-la; aqui, maste
 
 Refs #
 
+
+## O que mudou
+
+-
+
+## Tipo de mudança
+
+- [ ] Bugfix
+- [ ] Feature
+- [ ] Refatoração
+- [ ] Documentação
+- [ ] Infraestrutura / CI
+- [ ] Release / Hotfix
+
 ## Realização
 
 <!-- O que foi entregue? Destaque decisões, limitações e impacto para consumidores. -->
@@ -25,6 +39,13 @@ Se alguma validação não foi executada, explique por quê. -->
 
 1.
 
+## Validação
+
+- [ ] Testes automatizados executados
+- [ ] Build executado
+- [ ] Fluxo principal validado manualmente
+- [ ] Não se aplica
+
 ## O que há de novo
 
 <!-- Resuma as novidades relevantes para quem utilizará o recurso. -->
@@ -37,3 +58,11 @@ Se alguma validação não foi executada, explique por quê. -->
 - [ ] Evidências e instruções de teste permitem reproduzir a entrega; limitações documentadas.
 - [ ] Labels, milestone, Issue Type, Issue Fields e campos do Project conferidos com a issue quando disponíveis; divergências justificadas.
 - [ ] Revisão solicitada ao responsável pelo repositório e impacto nos consumidores verificado.
+
+
+## Checklist
+
+- [ ] A issue relacionada está vinculada
+- [ ] Labels e milestone foram revisadas
+- [ ] O Project foi atualizado com Priority, Effort, Size e Estimate quando aplicável
+- [ ] A documentação foi atualizada quando necessário
